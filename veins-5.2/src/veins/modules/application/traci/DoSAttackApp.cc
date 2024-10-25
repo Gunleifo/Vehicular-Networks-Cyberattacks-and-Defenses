@@ -184,13 +184,13 @@ void DoSAttackApp::updateTargetVisuals()
         // Calculate appropriate speed based on impact level
         double recoverySpeed;
         if (attackImpact > 0.8) {
-            recoverySpeed = traciVehicle->getMaxSpeed() * 0.2; 
+            recoverySpeed = traciVehicle->getMaxSpeed() * 0.15; 
         } else if (attackImpact > 0.5) {
-            recoverySpeed = traciVehicle->getMaxSpeed() * 0.4;  
+            recoverySpeed = traciVehicle->getMaxSpeed() * 0.3;  
         } else if (attackImpact > 0.2) {
-            recoverySpeed = traciVehicle->getMaxSpeed() * 0.6; 
+            recoverySpeed = traciVehicle->getMaxSpeed() * 0.5; 
         } else {
-            recoverySpeed = traciVehicle->getMaxSpeed() * 0.8; 
+            recoverySpeed = traciVehicle->getMaxSpeed() * 1; 
         }
         
         // Gradually adjust vehicle speed for smooth transitions
