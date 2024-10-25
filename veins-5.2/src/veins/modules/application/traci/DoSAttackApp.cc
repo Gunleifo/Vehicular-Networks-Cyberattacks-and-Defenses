@@ -103,11 +103,11 @@ void DoSAttackApp::handleSelfMsg(cMessage* msg)
             // Calculate recovery rate based on current impact level
             double recoveryRate;
             if (attackImpact > 0.8) {
-                recoveryRate = 0.02; 
+                recoveryRate = 0.01; 
             } else if (attackImpact > 0.5) {
-                recoveryRate = 0.04; 
+                recoveryRate = 0.02; 
             } else if (attackImpact > 0.2) {
-                recoveryRate = 0.06; 
+                recoveryRate = 0.03; 
             } else {
                 recoveryRate = 0.08;
             }
