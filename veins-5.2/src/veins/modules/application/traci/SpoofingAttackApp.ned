@@ -8,5 +8,5 @@ simple SpoofingAttackApp extends DemoBaseApplLayer
     parameters:
         @class(veins::SpoofingAttackApp); // C++ class implementing this module
         int attackerId = default(-1);     // ID of the attacker node, set in .ini file
-        double attackStartTime @unit(s) = default(70s); // Time when the attack starts
+        double attackStartTime @unit(s) = default(80s); // Time when the attack starts
 }
