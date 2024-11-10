@@ -6,54 +6,66 @@
 
 namespace veins {
 
-class DoSAttackApp : public DemoBaseApplLayer {
+class VEINS_API DoSAttackApp : public DemoBaseApplLayer {
 public:
-    DoSAttackApp() : nodeId(-1), 
-                     attackTimer(nullptr), 
-                     stopTimer(nullptr),
-                     recoveryTimer(nullptr), 
-                     isAttacker(false), 
-                     attackerId(-1), 
-                     attackInterval(0.1),
-                     recoveryInterval(0.5),
-                     attackStartTime(0),
-                     attackStopTime(0),
-                     isAttackActive(false),
-                     attackImpact(0.0) {}
+    DoSAttackApp() : 
+        nodeId(-1),
+        pingTimer(nullptr),
+        monitorTimer(nullptr),
+        isAttacker(false),
+        attackerId(-1),
+        pingInterval(0.0001),    
+        burstSize(10),          
+        attackStartTime(0),
+        attackStopTime(0),
+        lastStatsTime(0),
+        pingsSent(0),
+        pingsReceived(0),
+        responsesSent(0),
+        responsesDropped(0),
+        packetSentSignal(-1),
+        packetReceivedSignal(-1) {}
     
     virtual ~DoSAttackApp() {
-        cancelAndDelete(attackTimer);
-        cancelAndDelete(stopTimer);
-        cancelAndDelete(recoveryTimer);
+        cancelAndDelete(pingTimer);
+        cancelAndDelete(monitorTimer);
     }
 
 protected:
     virtual void initialize(int stage) override;
     virtual void handleSelfMsg(cMessage* msg) override;
     virtual void onWSM(BaseFrame1609_4* wsm) override;
+    virtual void finish() override;
 
 private:
-    void sendDoSMessage();
-    void updateTargetVisuals();
+    void sendPingBurst();
+    void sendPingResponse(int targetId);
+    void monitorQueueStatus();
     bool isTargetNode(int nodeId) const;
 
+    // Basic parameters
     int nodeId;
-    cMessage* attackTimer;
-    cMessage* stopTimer;
-    cMessage* recoveryTimer;
+    cMessage* pingTimer;
+    cMessage* monitorTimer;
     bool isAttacker;
     int attackerId;
-    double attackInterval;
-    double recoveryInterval;
     
+    // Attack parameters
+    double pingInterval;
+    int burstSize;
     simtime_t attackStartTime;
     simtime_t attackStopTime;
-    
-    bool isAttackActive;
     std::set<int> targetNodes;
     
-    simtime_t lastAttackTime;
-    double attackImpact;
+    // Statistics and monitoring
+    double lastStatsTime;
+    int pingsSent;
+    int pingsReceived;
+    int responsesSent;
+    int responsesDropped;
+    
+    // Signals for statistics
+    simsignal_t packetSentSignal;
+    simsignal_t packetReceivedSignal;
 };
-
 }
