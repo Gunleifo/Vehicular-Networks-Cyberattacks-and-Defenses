@@ -95,6 +95,29 @@ void DoSAttackApp::handleSelfMsg(cMessage* msg)
             monitorTimer = nullptr;
         }
     }
+    else if (strcmp(msg->getName(), "processingDelay") == 0) {
+        // Handle the delayed response after processing time
+        int* targetId = static_cast<int*>(msg->getContextPointer());
+        
+        cModule* nicModule = findHost()->getSubmodule("nic");
+        Mac1609_4* mac = check_and_cast<Mac1609_4*>(nicModule->getSubmodule("mac1609_4"));
+        
+        TraCIDemo11pMessage* response = new TraCIDemo11pMessage();
+        populateWSM(response);
+        
+        response->setSenderAddress(nodeId);
+        response->setDemoData("PONG");
+        response->setByteLength(1000);
+        
+        // Send the response after the delay
+        sendDown(response);
+        responsesSent++;
+        emit(packetSentSignal, 1L);
+        
+        // Clean up
+        delete targetId;
+        delete msg;
+    }
 }
 
 void DoSAttackApp::sendPingBurst()
@@ -141,24 +164,6 @@ void DoSAttackApp::sendPingBurst()
     }
 }
 
-void DoSAttackApp::sendPingResponse(int targetId)
-{
-    cModule* nicModule = findHost()->getSubmodule("nic");
-    Mac1609_4* mac = check_and_cast<Mac1609_4*>(nicModule->getSubmodule("mac1609_4"));
-    
-    TraCIDemo11pMessage* response = new TraCIDemo11pMessage();
-    populateWSM(response);
-    
-    response->setSenderAddress(nodeId);
-    response->setDemoData("PONG");
-    response->setByteLength(1000);
-    
-    // Attempt to send response
-    sendDown(response);
-    responsesSent++;
-    emit(packetSentSignal, 1L);
-}
-
 void DoSAttackApp::onWSM(BaseFrame1609_4* frame)
 {
     TraCIDemo11pMessage* wsm = dynamic_cast<TraCIDemo11pMessage*>(frame);
@@ -171,8 +176,11 @@ void DoSAttackApp::onWSM(BaseFrame1609_4* frame)
             pingsReceived++;
             emit(packetReceivedSignal, 1L);
             
-            // Try to send response
-            sendPingResponse(wsm->getSenderAddress());
+            // Schedule delayed response after X processing time
+            // Also remember to change SIMTIME_US! :)
+            cMessage* delayMsg = new cMessage("processingDelay");
+            delayMsg->setContextPointer(new int(wsm->getSenderAddress()));
+            scheduleAt(simTime() + SimTime(1000, SIMTIME_US), delayMsg);
             
             // Log every 100th message
             if (pingsReceived % 100 == 0) {
