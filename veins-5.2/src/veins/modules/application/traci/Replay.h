@@ -5,14 +5,14 @@
 
 namespace veins {
 
-class MITMAttackApp : public DemoBaseApplLayer {
+class Replay : public DemoBaseApplLayer {
 public:
-    MITMAttackApp() : sendMessageEvt(nullptr),
+    Replay() : sendMessageEvt(nullptr),
                       isAttacker(false),
                       hasAttacked(false), hasReceivedWarning(false),
                       hasSentMessage(false), nodeId(-1), senderNode(-1),
                       attackType(0) {}
-    
+
     //virtual ~MITMAttackApp() {
       //  cancelAndDelete(sendMessageEvt);
         //if (delayedFrame != nullptr) {
@@ -36,7 +36,7 @@ private:
     bool hasAttacked;
     bool hasReceivedWarning;
     bool hasSentMessage;
-    
+
     int nodeId;
     int senderNode;
     double attackTime;

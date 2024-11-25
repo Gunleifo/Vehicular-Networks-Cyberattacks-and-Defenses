@@ -1,15 +1,15 @@
-#include "veins/modules/application/traci/MITMAttackApp.h"
+#include "veins/modules/application/traci/Replay.h"
 #include <algorithm>
 #include <sstream>
 
 using namespace veins;
 
-Define_Module(MITMAttackApp);
+Define_Module(Replay);
 
-void MITMAttackApp::initialize(int stage)
+void Replay::initialize(int stage)
 {
     DemoBaseApplLayer::initialize(stage);
-    
+
     if (stage == 0) {
         // Get configuration parameters
         nodeId = getParentModule()->getIndex(); // Get the vehicle's index as its ID
@@ -18,16 +18,16 @@ void MITMAttackApp::initialize(int stage)
         senderNode = par("senderNode").intValue();
         //attackType = par("attackType").intValue(); // Attack type: 1 = Drop, 2 = Tamper
 
-        
+
         // Initialize status
         hasAttacked = false;
         hasReceivedWarning = false;
         hasSentMessage = false;
-        
+
 
         if (isAttacker) {
             findHost()->getDisplayString().setTagArg("i", 1, "yellow");
-                
+
             EV_INFO << "MITM Attack Vehicle initialized as Node " << nodeId << " at " << simTime() << endl;
 
         }
@@ -37,7 +37,7 @@ void MITMAttackApp::initialize(int stage)
                 sendMessageEvt = new cMessage("sendMessage");
                 // Schedule message slightly before attack time
                 scheduleAt(simTime() + (attackTime - 1), sendMessageEvt);
-                
+
                 // Make sender vehicle visually distinct
                 findHost()->getDisplayString().setTagArg("i", 1, "blue");
                 EV_INFO << "Sender vehicle " << nodeId << " initialized" << endl;
@@ -46,7 +46,7 @@ void MITMAttackApp::initialize(int stage)
     }
 }
 
-void MITMAttackApp::handleSelfMsg(cMessage* msg)
+void Replay::handleSelfMsg(cMessage* msg)
 {
     if (msg == sendMessageEvt && !hasSentMessage && nodeId == senderNode) {
         sendNormalMessage();
@@ -55,26 +55,26 @@ void MITMAttackApp::handleSelfMsg(cMessage* msg)
     }
 }
 
-void MITMAttackApp::sendNormalMessage()
+void Replay::sendNormalMessage()
 {
     TraCIDemo11pMessage* wsm = new TraCIDemo11pMessage();
     populateWSM(wsm);
-    wsm->setDemoData("STATUS:normal");
+    wsm->setDemoData("Emergency");
     sendDown(wsm);
     EV_INFO << "Vehicle " << nodeId << " sent message to attacker " << attackerNodeId << " at " << simTime() << endl;
 }
 
-void MITMAttackApp::onWSM(BaseFrame1609_4* frame)
+void Replay::onWSM(BaseFrame1609_4* frame)
 {
     TraCIDemo11pMessage* wsm = check_and_cast<TraCIDemo11pMessage*>(frame);
     std::string message = wsm->getDemoData();
-    
+
     if (isAttacker && !hasAttacked) {
 
-        if (message.find("STATUS:normal") != std::string::npos) {
-            TraCIDemo11pMessage* modifiedMsg = wsm->dup();
-            modifiedMsg->setDemoData("WARNING:accident");
-            sendDown(modifiedMsg);
+        if (message.find("Emergency") != std::string::npos) {
+            TraCIDemo11pMessage* replayMsg = wsm->dup();
+            replayMsg->setDemoData("Emergency");
+            sendDown(replayMsg);
             hasAttacked = true;
             EV_INFO << "Vehicle " << nodeId << " (Attacker) modified and forwarded message at " << simTime() << endl;
         }
@@ -82,23 +82,23 @@ void MITMAttackApp::onWSM(BaseFrame1609_4* frame)
     }
     else if (!isAttacker && !hasReceivedWarning && nodeId != senderNode) {
         // Other vehicles receive the modified message
-        if (message.find("WARNING:accident") != std::string::npos) {
+        if (message.find("replay") != std::string::npos) {
             hasReceivedWarning = true;
-            
+
             // Visual feedback
             findHost()->getDisplayString().setTagArg("i", 1, "red");
-            
+
             if (traciVehicle) {
                 traciVehicle->setSpeed(0);
                 traciVehicle->setColor(TraCIColor(255, 0, 0, 255));
             }
-            
+
             EV_INFO << "Vehicle " << nodeId << " stopped due to accident warning at " << simTime() << endl;
         }
     }
 }
 
-void MITMAttackApp::finish()
+void Replay::finish()
 {
     if (isAttacker) {
         EV_INFO << "Attacker vehicle " << nodeId << " attack completed at " << simTime() << endl;
@@ -106,6 +106,6 @@ void MITMAttackApp::finish()
     else if (hasReceivedWarning) {
         EV_INFO << "Vehicle " << nodeId << " was affected by the attack" << endl;
     }
-    
+
     DemoBaseApplLayer::finish();
 }
