@@ -12,26 +12,26 @@ void MITMAttackApp::initialize(int stage)
     
     if (stage == 0) {
         // Get configuration parameters
-        isRSU = par("isRSU").boolValue();
-        isAttacker = isRSU && par("isAttacker").boolValue();
+        nodeId = getParentModule()->getIndex(); // Get the vehicle's index as its ID
+        isAttacker = par("isAttacker").boolValue(); // Define attacker based on node ID
         attackTime = par("attackTime").doubleValue();
         senderNode = par("senderNode").intValue();
-        
-        nodeId = getParentModule()->getIndex();
+        //attackType = par("attackType").intValue(); // Attack type: 1 = Drop, 2 = Tamper
+
         
         // Initialize status
         hasAttacked = false;
         hasReceivedWarning = false;
         hasSentMessage = false;
         
-        if (isRSU) {
-            if (isAttacker) {
-                findHost()->getDisplayString().setTagArg("i", 1, "red");
-                findHost()->getDisplayString().setTagArg("is", 0, "2");
+
+        if (isAttacker) {
+            findHost()->getDisplayString().setTagArg("i", 1, "yellow");
                 
-                EV_INFO << "MITM Attack RSU initialized at " << simTime() << endl;
-            }
-        } else {
+            EV_INFO << "MITM Attack Vehicle initialized as Node " << nodeId << " at " << simTime() << endl;
+
+        }
+        else {
             // Only sender vehicle creates timer
             if (nodeId == senderNode) {
                 sendMessageEvt = new cMessage("sendMessage");
@@ -61,6 +61,7 @@ void MITMAttackApp::sendNormalMessage()
     populateWSM(wsm);
     wsm->setDemoData("STATUS:normal");
     sendDown(wsm);
+    EV_INFO << "Vehicle " << nodeId << " sent message to attacker " << attackerNodeId << " at " << simTime() << endl;
 }
 
 void MITMAttackApp::onWSM(BaseFrame1609_4* frame)
@@ -68,18 +69,18 @@ void MITMAttackApp::onWSM(BaseFrame1609_4* frame)
     TraCIDemo11pMessage* wsm = check_and_cast<TraCIDemo11pMessage*>(frame);
     std::string message = wsm->getDemoData();
     
-    if (isRSU && isAttacker && !hasAttacked) {
+    if (isAttacker && !hasAttacked) {
+
         if (message.find("STATUS:normal") != std::string::npos) {
-            // RSU modifies and forwards the message
             TraCIDemo11pMessage* modifiedMsg = wsm->dup();
             modifiedMsg->setDemoData("WARNING:accident");
             sendDown(modifiedMsg);
-            
             hasAttacked = true;
-            EV_INFO << "RSU modified and forwarded message at " << simTime() << endl;
+            EV_INFO << "Vehicle " << nodeId << " (Attacker) modified and forwarded message at " << simTime() << endl;
         }
+
     }
-    else if (!isRSU && !hasReceivedWarning && nodeId != senderNode) {
+    else if (!isAttacker && !hasReceivedWarning && nodeId != senderNode) {
         // Other vehicles receive the modified message
         if (message.find("WARNING:accident") != std::string::npos) {
             hasReceivedWarning = true;
@@ -99,8 +100,8 @@ void MITMAttackApp::onWSM(BaseFrame1609_4* frame)
 
 void MITMAttackApp::finish()
 {
-    if (isRSU && isAttacker) {
-        EV_INFO << "RSU attack completed at " << simTime() << endl;
+    if (isAttacker) {
+        EV_INFO << "Attacker vehicle " << nodeId << " attack completed at " << simTime() << endl;
     }
     else if (hasReceivedWarning) {
         EV_INFO << "Vehicle " << nodeId << " was affected by the attack" << endl;

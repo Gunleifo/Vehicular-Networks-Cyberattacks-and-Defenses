@@ -8,13 +8,17 @@ namespace veins {
 class MITMAttackApp : public DemoBaseApplLayer {
 public:
     MITMAttackApp() : sendMessageEvt(nullptr),
-                      isRSU(false), isAttacker(false), 
+                      isAttacker(false),
                       hasAttacked(false), hasReceivedWarning(false),
-                      hasSentMessage(false), nodeId(-1), senderNode(-1) {}
+                      hasSentMessage(false), nodeId(-1), senderNode(-1),
+                      attackType(0) {}
     
-    virtual ~MITMAttackApp() {
-        cancelAndDelete(sendMessageEvt);
-    }
+    //virtual ~MITMAttackApp() {
+      //  cancelAndDelete(sendMessageEvt);
+        //if (delayedFrame != nullptr) {
+          //  delete delayedFrame;
+       // }
+    //}
 
 protected:
     virtual void initialize(int stage) override;
@@ -26,8 +30,8 @@ private:
     void sendNormalMessage();
 
     cMessage* sendMessageEvt;
-    
-    bool isRSU;
+    //cMessage* delayedMessage;
+
     bool isAttacker;
     bool hasAttacked;
     bool hasReceivedWarning;
@@ -36,6 +40,8 @@ private:
     int nodeId;
     int senderNode;
     double attackTime;
+    int attackType;
+    int attackerNodeId;
 };
 
 }
