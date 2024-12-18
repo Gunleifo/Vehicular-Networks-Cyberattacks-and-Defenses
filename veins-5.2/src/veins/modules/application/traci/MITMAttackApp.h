@@ -11,14 +11,7 @@ public:
                       isAttacker(false),
                       hasAttacked(false), hasReceivedWarning(false),
                       hasSentMessage(false), nodeId(-1), senderNode(-1),
-                      attackType(0) {}
-    
-    //virtual ~MITMAttackApp() {
-      //  cancelAndDelete(sendMessageEvt);
-        //if (delayedFrame != nullptr) {
-          //  delete delayedFrame;
-       // }
-    //}
+                      attackTime(0){}
 
 protected:
     virtual void initialize(int stage) override;
@@ -28,18 +21,25 @@ protected:
 
 private:
     void sendNormalMessage();
+    int simpleHash(const std::string& message);
+    int EncryptDecrypt(int hash);
+    int signMessage(int hash);
+    bool verifySignature(const std::string& message, int signature);
 
     cMessage* sendMessageEvt;
-    //cMessage* delayedMessage;
 
     bool isAttacker;
     bool hasAttacked;
     bool hasReceivedWarning;
     bool hasSentMessage;
-    
+
+    int SymmetricKey;
+    int modulus;
+
     int nodeId;
     int senderNode;
     double attackTime;
+
     int attackType;
     int attackerNodeId;
 };
