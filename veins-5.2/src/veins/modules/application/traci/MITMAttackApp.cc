@@ -89,7 +89,6 @@ void MITMAttackApp::onWSM(BaseFrame1609_4* frame)
         }
     } else if (!isAttacker && !hasReceivedWarning && nodeId != senderNode) {
         if (receivedMessage.find("WARNING:accident") != std::string::npos) {
-            EV_INFO << "AQUIIIIII Mensagem: " << receivedMessage << " signature " << receivedSignature << endl;
 
             if (verifySignature(receivedMessage, receivedSignature) == false) {
                 //
@@ -138,6 +137,5 @@ bool MITMAttackApp::verifySignature(const std::string& message, int signature)
 {
     int newHash = simpleHash(message);
     int expectedHash = EncryptDecrypt(signature);
-    EV_INFO << "Estou aqui e temos newHash:" << newHash << "e temos expected:" << expectedHash << endl;
     return newHash == expectedHash;
 }
