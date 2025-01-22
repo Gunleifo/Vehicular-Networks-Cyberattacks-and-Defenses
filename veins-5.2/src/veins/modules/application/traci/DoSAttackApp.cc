@@ -180,7 +180,7 @@ void DoSAttackApp::onWSM(BaseFrame1609_4* frame)
             // Also remember to change SIMTIME_US! :)
             cMessage* delayMsg = new cMessage("processingDelay");
             delayMsg->setContextPointer(new int(wsm->getSenderAddress()));
-            scheduleAt(simTime() + SimTime(1000, SIMTIME_US), delayMsg);
+            scheduleAt(simTime() + SimTime(1000, SIMTIME_MS), delayMsg);
             
             // Log every 100th message
             if (pingsReceived % 100 == 0) {
