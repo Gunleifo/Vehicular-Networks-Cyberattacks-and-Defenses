@@ -42,6 +42,7 @@ private:
 
     int attackType;
     int attackerNodeId;
+    int digitalsignature;
 };
 
 }
