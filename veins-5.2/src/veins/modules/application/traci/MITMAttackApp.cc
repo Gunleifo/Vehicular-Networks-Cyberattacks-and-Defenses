@@ -14,6 +14,7 @@ void MITMAttackApp::initialize(int stage)
         // Key generation (simple example)
         modulus = 12;
         SymmetricKey = 13579;
+        digitalsignature=1; //0 is no and 1 is yes
 
         // Get configuration parameters
         nodeId = getParentModule()->getIndex(); // Get the vehicle's index as its ID
@@ -60,11 +61,14 @@ void MITMAttackApp::sendNormalMessage()
     populateWSM(wsm);
 
     std::string message = "STATUS:normal";
+
     int hash = simpleHash(message);
     int signature = EncryptDecrypt(hash);
 
     wsm->setDemoData(message.c_str());
-    wsm->addPar("signature") = signature;
+    if (digitalsignature==1){
+        wsm->addPar("signature") = signature;
+    }
 
     sendDown(wsm);
     EV_INFO << "Vehicle " << nodeId << " sent signed message with hash " << hash
@@ -75,14 +79,21 @@ void MITMAttackApp::onWSM(BaseFrame1609_4* frame)
 {
     TraCIDemo11pMessage* wsm = check_and_cast<TraCIDemo11pMessage*>(frame);
     std::string receivedMessage = wsm->getDemoData();
-    int receivedSignature = wsm->par("signature");
+    int receivedSignature=0;
+
+    if (digitalsignature==1){
+        int receivedSignature = wsm->par("signature");
+    }
 
 
     if (isAttacker && !hasAttacked) {
         if (receivedMessage.find("STATUS:normal") != std::string::npos) {
             TraCIDemo11pMessage* modifiedMsg = wsm->dup();
             modifiedMsg->setDemoData("WARNING:accident");
-            modifiedMsg->addPar("signature") = receivedSignature;
+            if (digitalsignature==1){
+                modifiedMsg->addPar("signature") = receivedSignature;
+            }
+
             sendDown(modifiedMsg);
             hasAttacked = true;
             EV_INFO << "Vehicle " << nodeId << " (Attacker) modified and forwarded message at " << simTime() << endl;
@@ -90,18 +101,31 @@ void MITMAttackApp::onWSM(BaseFrame1609_4* frame)
     } else if (!isAttacker && !hasReceivedWarning && nodeId != senderNode) {
         if (receivedMessage.find("WARNING:accident") != std::string::npos) {
 
-            if (verifySignature(receivedMessage, receivedSignature) == false) {
-                //
-            } else if ((verifySignature(receivedMessage, receivedSignature) == true)){
+            if (digitalsignature==1){
+
+                if (verifySignature(receivedMessage, receivedSignature) == false) {
+                    //
+                } else if ((verifySignature(receivedMessage, receivedSignature) == true)){
+                    hasReceivedWarning = true;
+                    findHost()->getDisplayString().setTagArg("i", 1, "red");
+
+                    if (traciVehicle) {
+                        traciVehicle->setSpeed(0);
+                        traciVehicle->setColor(TraCIColor(255, 0, 0, 255));
+                    }
+
+                    EV_INFO << "Vehicle " << nodeId << " stopped due to accident warning at " << simTime() << endl;
+                }
+            }else{
                 hasReceivedWarning = true;
                 findHost()->getDisplayString().setTagArg("i", 1, "red");
 
-                if (traciVehicle) {
-                    traciVehicle->setSpeed(0);
-                    traciVehicle->setColor(TraCIColor(255, 0, 0, 255));
-                }
+                 if (traciVehicle) {
+                      traciVehicle->setSpeed(0);
+                      traciVehicle->setColor(TraCIColor(255, 0, 0, 255));
+                 }
 
-                EV_INFO << "Vehicle " << nodeId << " stopped due to accident warning at " << simTime() << endl;
+                 EV_INFO << "Vehicle " << nodeId << " stopped due to accident warning at " << simTime() << endl;
             }
         }
     }
@@ -139,3 +163,4 @@ bool MITMAttackApp::verifySignature(const std::string& message, int signature)
     int expectedHash = EncryptDecrypt(signature);
     return newHash == expectedHash;
 }
+
